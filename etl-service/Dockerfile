@@ -1,0 +1,17 @@
+# ── ETL Microservice Dockerfile ───────────────────────────────────────────────
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --omit=dev
+COPY . .
+
+EXPOSE 3004
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
+  CMD wget -qO- http://localhost:3004/health || exit 1
+
+USER node
+
+CMD ["node", "src/server.js"]

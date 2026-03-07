@@ -1,0 +1,104 @@
+# kong/config/kong.yml
+# Kong Declarative Configuration (DB-less mode)
+# All microservices are accessible through a single gateway on port 80/443
+# Rate limiting applied to joke service to prevent abuse
+
+_format_version: "3.0"
+_transform: true
+
+# ── Services ──────────────────────────────────────────────────────────────────
+# Each service maps to a microservice on the Docker network
+
+services:
+
+  # ── Joke Service ─────────────────────────────────────────────────────────────
+  - name: joke-service
+    url: http://joke-service:3001
+    routes:
+      - name: joke-route
+        paths:
+          - /joke
+        strip_path: false
+      - name: joke-types-route
+        paths:
+          - /types
+        strip_path: false
+      - name: joke-health-route
+        paths:
+          - /joke-health
+        strip_path: true
+        # rewrite /joke-health → /health on upstream
+    plugins:
+      # Rate limit joke requests — 10 per minute per IP
+      - name: rate-limiting
+        config:
+          minute: 10
+          hour: 100
+          policy: local
+          limit_by: ip
+          error_message: "Rate limit exceeded — slow down! Max 10 jokes per minute."
+
+  # ── Submit Service ────────────────────────────────────────────────────────────
+  - name: submit-service
+    url: http://submit-service:3002
+    routes:
+      - name: submit-route
+        paths:
+          - /submit
+        strip_path: false
+      - name: submit-types-route
+        paths:
+          - /submit-types
+        strip_path: true
+      - name: submit-docs-route
+        paths:
+          - /submit-docs
+        strip_path: true
+
+  # ── Moderate Service ──────────────────────────────────────────────────────────
+  - name: moderate-service
+    url: http://moderate-service:3003
+    routes:
+      - name: moderate-route
+        paths:
+          - /moderate
+        strip_path: false
+      - name: moderated-route
+        paths:
+          - /moderated
+        strip_path: false
+
+  # ── ETL Service (health only) ─────────────────────────────────────────────────
+  - name: etl-service
+    url: http://etl-service:3004
+    routes:
+      - name: etl-health-route
+        paths:
+          - /etl-health
+        strip_path: true
+
+# ── Global Plugins ─────────────────────────────────────────────────────────────
+plugins:
+  # CORS — allow browser requests
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Authorization
+        - Content-Type
+      credentials: true
+      max_age: 3600
+
+  # Request logging
+  - name: file-log
+    config:
+      path: /tmp/kong-access.log
+      reopen: true

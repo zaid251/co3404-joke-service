@@ -1,0 +1,196 @@
+# CO3404 Distributed Systems — Docker Compose
+# Usage: docker-compose up --build
+
+services:
+
+  # RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - joke-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # MySQL
+  mysql-db:
+    image: mysql:8
+    container_name: mysql-db
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: jokesdb
+      MYSQL_USER: jokeuser
+      MYSQL_PASSWORD: jokepass123
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./joke-service/database/joke_db.sql:/docker-entrypoint-initdb.d/joke_db.sql
+    networks:
+      - joke-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "jokeuser", "-pjokepass123"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  # MongoDB
+  mongo-db:
+    image: mongo:7
+    container_name: mongo-db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - joke-network
+
+  # Joke Microservice
+  joke-service:
+    build: ./joke-service
+    container_name: joke-service
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DB_MODE: MYSQL
+      MYSQL_HOST: mysql-db
+      MYSQL_PORT: 3306
+      MYSQL_USER: jokeuser
+      MYSQL_PASSWORD: jokepass123
+      MYSQL_DATABASE: jokesdb
+      MONGO_URI: mongodb://mongo-db:27017/jokesdb
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      TYPES_CACHE_PATH: /app/cache/types.json
+    volumes:
+      - joke_cache:/app/cache
+    networks:
+      - joke-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Submit Microservice
+  submit-service:
+    build: ./submit-service
+    container_name: submit-service
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      JOKE_SERVICE_URL: http://joke-service:3001
+      TYPES_CACHE_PATH: /app/cache/types.json
+    volumes:
+      - submit_cache:/app/cache
+    networks:
+      - joke-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      joke-service:
+        condition: service_started
+    restart: unless-stopped
+
+  # Moderate Microservice
+  moderate-service:
+    build: ./moderate-service
+    container_name: moderate-service
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      BASE_URL: http://localhost:3003
+      SESSION_SECRET: ${SESSION_SECRET}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      SUBMIT_QUEUE: submit
+      MODERATED_QUEUE: moderated
+    volumes:
+      - moderate_cache:/app/cache
+    networks:
+      - joke-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ETL Microservice
+  etl-service:
+    build: ./etl-service
+    container_name: etl-service
+    ports:
+      - "3004:3004"
+    environment:
+      PORT: 3004
+      DB_MODE: MYSQL
+      MYSQL_HOST: mysql-db
+      MYSQL_PORT: 3306
+      MYSQL_USER: jokeuser
+      MYSQL_PASSWORD: jokepass123
+      MYSQL_DATABASE: jokesdb
+      MONGO_URI: mongodb://mongo-db:27017/jokesdb
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    networks:
+      - joke-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+# ── Kong API Gateway ──────────────────────────────────────────────────────────
+  kong:
+    build: ./kong
+    container_name: kong
+    ports:
+      - "80:8000"
+      - "443:8443"
+      - "8001:8001"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+    volumes:
+      - ./kong/config/kong.yml:/etc/kong/kong.yml:ro
+    networks:
+      - joke-network
+    depends_on:
+      - joke-service
+      - submit-service
+      - moderate-service
+      - etl-service
+    restart: unless-stopped
+    
+networks:
+  joke-network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
+  mysql_data:
+  mongo_data:
+  joke_cache:
+  submit_cache:
+  moderate_cache:

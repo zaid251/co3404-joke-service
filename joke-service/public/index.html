@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JokeCraft — The Joke Machine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #12121a;
+      --card:      #1a1a28;
+      --accent:    #f5c542;
+      --accent2:   #e05c5c;
+      --text:      #e8e8f0;
+      --muted:     #6b6b8a;
+      --border:    rgba(245,197,66,0.15);
+      --glow:      0 0 40px rgba(245,197,66,0.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 20%, rgba(245,197,66,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(224,92,92,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Noise texture ── */
+    body::after {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+      pointer-events: none;
+      opacity: 0.4;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+      animation: fadeDown 0.8s ease both;
+    }
+
+    .logo-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logo-icon {
+      font-size: 2rem;
+      animation: spin 8s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.5rem, 7vw, 4rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent) 0%, #fff8e0 50%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 0.95rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-family: 'DM Mono', monospace;
+      margin-top: 0.5rem;
+    }
+
+    /* ── Controls card ── */
+    .controls {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--glow);
+      animation: fadeUp 0.8s 0.2s ease both;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    label {
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+    }
+
+    select, input[type="number"] {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      appearance: none;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(245,197,66,0.1);
+    }
+
+    select option { background: var(--surface); }
+
+    /* ── Button ── */
+    .btn-get {
+      padding: 0.75rem 2rem;
+      background: var(--accent);
+      color: #0a0a0f;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-get:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(245,197,66,0.3);
+    }
+
+    .btn-get:active { transform: translateY(0); }
+
+    .btn-get.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    /* ── Joke display ── */
+    #joke-display {
+      min-height: 200px;
+      animation: fadeUp 0.8s 0.4s ease both;
+    }
+
+    .joke-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      position: relative;
+      overflow: hidden;
+      animation: cardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    .joke-card::before {
+      content: '"';
+      position: absolute;
+      top: -0.5rem;
+      left: 1.5rem;
+      font-family: 'Playfair Display', serif;
+      font-size: 8rem;
+      color: var(--accent);
+      opacity: 0.06;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .type-badge {
+      display: inline-block;
+      background: rgba(245,197,66,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(245,197,66,0.2);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 1.5rem;
+    }
+
+    .joke-setup {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.2rem, 3vw, 1.6rem);
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+    }
+
+    .joke-punchline {
+      font-size: 1.1rem;
+      color: var(--accent);
+      font-style: italic;
+      font-family: 'DM Sans', sans-serif;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .joke-punchline.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .countdown {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+
+    .empty-state .emoji { font-size: 4rem; margin-bottom: 1rem; display: block; }
+    .empty-state p { font-size: 1rem; }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      margin-top: 3rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-family: 'DM Mono', monospace;
+      animation: fadeUp 0.8s 0.6s ease both;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 500px) {
+      .control-row { flex-direction: column; }
+      .btn-get { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <div class="logo-line">
+        <span class="logo-icon">🃏</span>
+        <h1>JokeCraft</h1>
+      </div>
+      <p class="tagline">Distributed Jokes — CO3404 Joke Service</p>
+    </header>
+
+    <div class="controls">
+      <div class="control-row">
+        <div class="field">
+          <label for="type-select">Joke Type</label>
+          <select id="type-select">
+            <option value="">Loading types…</option>
+          </select>
+        </div>
+        <div class="field" style="max-width: 110px;">
+          <label for="count-input">Count</label>
+          <input type="number" id="count-input" value="1" min="1" max="10" />
+        </div>
+        <button class="btn-get" id="get-joke-btn" onclick="fetchJoke()">
+          Get Joke ✦
+        </button>
+      </div>
+    </div>
+
+    <div id="joke-display">
+      <div class="empty-state">
+        <span class="emoji">🎭</span>
+        <p>Select a type and hit <strong>Get Joke</strong> to begin</p>
+      </div>
+    </div>
+
+    <footer>
+      <p>CO3404 Distributed Systems &mdash; Joke Microservice &mdash; <a href="/docs" target="_blank">API Docs ↗</a></p>
+    </footer>
+
+  </div>
+
+  <script>
+    const typeSelect  = document.getElementById('type-select');
+    const countInput  = document.getElementById('count-input');
+    const jokeDisplay = document.getElementById('joke-display');
+    const getBtn      = document.getElementById('get-joke-btn');
+
+    // ── Load types on page load & when dropdown is opened ──────────────────
+    async function loadTypes() {
+      try {
+        const res   = await fetch('/types');
+        const types = await res.json();
+        typeSelect.innerHTML = '<option value="any">✦ Any Type</option>' +
+          types.map(t => `<option value="${t}">${capitalize(t)}</option>`).join('');
+      } catch (err) {
+        typeSelect.innerHTML = '<option value="">Failed to load</option>';
+        console.error('Failed to load types:', err);
+      }
+    }
+
+    typeSelect.addEventListener('mousedown', loadTypes);
+    typeSelect.addEventListener('focus', loadTypes);
+    loadTypes();
+
+    // ── Fetch and display joke(s) ───────────────────────────────────────────
+    async function fetchJoke() {
+      const type  = typeSelect.value;
+      const count = parseInt(countInput.value) || 1;
+
+      if (!type) { return; }
+
+      getBtn.classList.add('loading');
+      getBtn.textContent = 'Loading…';
+
+      try {
+        const res   = await fetch(`/joke/${type}?count=${count}`);
+        const jokes = await res.json();
+
+        if (!res.ok || !Array.isArray(jokes) || jokes.length === 0) {
+          showError(jokes.error || 'No jokes found for this type.');
+          return;
+        }
+
+        renderJokes(jokes);
+      } catch (err) {
+        showError('Could not connect to the joke service.');
+      } finally {
+        getBtn.classList.remove('loading');
+        getBtn.textContent = 'Get Joke ✦';
+      }
+    }
+
+    function renderJokes(jokes) {
+      jokeDisplay.innerHTML = jokes.map((joke, i) => `
+        <div class="joke-card" style="margin-bottom: ${i < jokes.length - 1 ? '1.5rem' : '0'}; animation-delay: ${i * 0.1}s">
+          <span class="type-badge">${joke.type || 'joke'}</span>
+          <p class="joke-setup">${escapeHtml(joke.setup)}</p>
+          <p class="joke-punchline" id="punchline-${i}">${escapeHtml(joke.punchline)}</p>
+          <p class="countdown" id="countdown-${i}">Punchline in 3…</p>
+        </div>
+      `).join('');
+
+      // Reveal each punchline after 3s
+      jokes.forEach((_, i) => {
+        let secs = 3;
+        const countdownEl  = document.getElementById(`countdown-${i}`);
+        const punchlineEl  = document.getElementById(`punchline-${i}`);
+
+        const interval = setInterval(() => {
+          secs--;
+          if (secs > 0) {
+            countdownEl.textContent = `Punchline in ${secs}…`;
+          } else {
+            clearInterval(interval);
+            countdownEl.textContent = '';
+            punchlineEl.classList.add('revealed');
+          }
+        }, 1000);
+      });
+    }
+
+    function showError(msg) {
+      jokeDisplay.innerHTML = `
+        <div class="empty-state">
+          <span class="emoji">😬</span>
+          <p>${msg}</p>
+        </div>`;
+    }
+
+    function capitalize(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // Allow Enter key to trigger joke fetch
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') fetchJoke();
+    });
+  </script>
+</body>
+</html>

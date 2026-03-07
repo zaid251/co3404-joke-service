@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JokeCraft — Moderator Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #0f0a0a;
+      --surface: #170f0f;
+      --card:    #201414;
+      --accent:  #e05c5c;
+      --green:   #4caf7d;
+      --gold:    #f5c542;
+      --text:    #ede0e0;
+      --muted:   #7a5a5a;
+      --border:  rgba(224,92,92,0.15);
+      --glow:    0 0 40px rgba(224,92,92,0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: radial-gradient(ellipse 60% 40% at 80% 20%, rgba(224,92,92,0.05) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      animation: fadeDown 0.6s ease both;
+    }
+
+    .header-left h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), #ff9999);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-left p {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-family: 'DM Mono', monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 0.3rem;
+    }
+
+    /* ── User badge ── */
+    .user-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.5rem 1rem 0.5rem 0.5rem;
+    }
+
+    .user-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: white;
+      font-weight: 700;
+      overflow: hidden;
+    }
+
+    .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .user-name {
+      font-size: 0.85rem;
+      font-family: 'DM Mono', monospace;
+      color: var(--text);
+    }
+
+    .btn-logout {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: 'DM Mono', monospace;
+      transition: all 0.2s;
+      margin-left: 0.5rem;
+    }
+    .btn-logout:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Login screen ── */
+    #login-screen {
+      text-align: center;
+      padding: 5rem 2rem;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .login-icon { font-size: 4rem; margin-bottom: 1.5rem; display: block; }
+
+    #login-screen h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+    }
+
+    #login-screen p {
+      color: var(--muted);
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    .btn-login {
+      display: inline-block;
+      padding: 0.9rem 2.5rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(224,92,92,0.3);
+    }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    .stat {
+      flex: 1;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Main panel ── */
+    #main-panel { animation: fadeUp 0.6s 0.2s ease both; }
+
+    /* ── Empty state ── */
+    .empty-state {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+
+    .empty-state .emoji { font-size: 3.5rem; display: block; margin-bottom: 1rem; }
+    .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .empty-state p { color: var(--muted); font-size: 0.9rem; }
+
+    .polling-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+    }
+
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: blink 1.4s infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: 0; } 40% { opacity: 1; } }
+
+    /* ── Joke card ── */
+    .joke-review-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: var(--glow);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+    }
+
+    .submitted-at {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    /* ── Form fields ── */
+    .field { margin-bottom: 1.25rem; }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 0.4rem;
+    }
+
+    textarea, select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid rgba(224,92,92,0.1);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: vertical;
+    }
+
+    textarea { min-height: 80px; }
+    textarea:focus, select:focus { border-color: var(--accent); }
+    select option { background: var(--surface); }
+
+    /* ── Action buttons ── */
+    .actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .btn-approve {
+      flex: 2;
+      padding: 0.9rem;
+      background: var(--green);
+      color: #0a0f0a;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .btn-approve:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76,175,125,0.3);
+    }
+
+    .btn-reject {
+      flex: 1;
+      padding: 0.9rem;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-reject:hover {
+      background: rgba(224,92,92,0.1);
+    }
+
+    .btn-approve:disabled, .btn-reject:disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.9rem 1.5rem;
+      font-size: 0.9rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      z-index: 100;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Animations ── */
+    @keyframes fadeDown { from { opacity:0; transform:translateY(-15px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(15px);  } to { opacity:1; transform:translateY(0); } }
+
+    footer {
+      text-align: center;
+      margin-top: 2.5rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-family: 'DM Mono', monospace;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Login Screen -->
+    <div id="login-screen" style="display:none">
+      <span class="login-icon">🔐</span>
+      <h2>Moderator Access Only</h2>
+      <p>You must be authenticated to access the moderation panel.</p>
+      <a href="/login" class="btn-login">Login with Auth0 ✦</a>
+    </div>
+
+    <!-- Main App (shown when authenticated) -->
+    <div id="app" style="display:none">
+
+      <header>
+        <div class="header-left">
+          <h1>⚖️ Moderator Panel</h1>
+          <p>CO3404 Moderate Microservice</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <div class="user-badge">
+            <div class="user-avatar" id="user-avatar">?</div>
+            <span class="user-name" id="user-name">Loading...</span>
+          </div>
+          <a href="/logout" class="btn-logout">Logout</a>
+        </div>
+      </header>
+
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="stat-value" id="stat-approved">0</div>
+          <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-rejected">0</div>
+          <div class="stat-label">Rejected</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="stat-pending">—</div>
+          <div class="stat-label">In Queue</div>
+        </div>
+      </div>
+
+      <div id="main-panel">
+        <!-- Content injected by JS -->
+      </div>
+
+    </div>
+
+    <footer>
+      CO3404 Distributed Systems — Moderate Microservice —
+      <a href="/docs" target="_blank">API Docs ↗</a>
+    </footer>
+
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script>
+    let pollInterval = null;
+    let approvedCount = 0;
+    let rejectedCount = 0;
+    let currentJoke   = null;
+    let types         = [];
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    async function init() {
+      try {
+        const res  = await fetch('/me');
+        const data = await res.json();
+
+        if (!data.authenticated) {
+          document.getElementById('login-screen').style.display = 'block';
+          return;
+        }
+
+        document.getElementById('app').style.display = 'block';
+        document.getElementById('user-name').textContent = data.user.name || data.user.email;
+
+        const avatar = document.getElementById('user-avatar');
+        if (data.user.picture) {
+          avatar.innerHTML = `<img src="${data.user.picture}" alt="avatar" />`;
+        } else {
+          avatar.textContent = (data.user.name || 'M')[0].toUpperCase();
+        }
+
+        await loadTypes();
+        fetchNextJoke();
+      } catch (err) {
+        document.getElementById('login-screen').style.display = 'block';
+      }
+    }
+
+    // ── Load types ────────────────────────────────────────────────────────────
+    async function loadTypes() {
+      try {
+        const res  = await fetch('/types');
+        const data = await res.json();
+        types = data.types || [];
+      } catch (err) {
+        console.error('Failed to load types:', err);
+      }
+    }
+
+    // ── Fetch next joke ───────────────────────────────────────────────────────
+    async function fetchNextJoke() {
+      clearInterval(pollInterval);
+      try {
+        const res  = await fetch('/moderate');
+        const data = await res.json();
+
+        if (data.joke) {
+          currentJoke = data.joke;
+          document.getElementById('stat-pending').textContent = '1+';
+          renderJoke(data.joke);
+        } else {
+          currentJoke = null;
+          document.getElementById('stat-pending').textContent = '0';
+          renderEmpty();
+          // Poll every second
+          pollInterval = setInterval(fetchNextJoke, 1000);
+        }
+      } catch (err) {
+        renderEmpty();
+        pollInterval = setInterval(fetchNextJoke, 1000);
+      }
+    }
+
+    // ── Render joke for review ────────────────────────────────────────────────
+    function renderJoke(joke) {
+      const typeOptions = types.map(t =>
+        `<option value="${t}" ${t === joke.type ? 'selected' : ''}>${capitalize(t)}</option>`
+      ).join('');
+
+      document.getElementById('main-panel').innerHTML = `
+        <div class="joke-review-card">
+          <div class="card-header">
+            <span class="card-title">🃏 Review This Joke</span>
+            <span class="submitted-at">Submitted: ${formatDate(joke.submittedAt)}</span>
+          </div>
+
+          <div class="field">
+            <label>Setup / Question</label>
+            <textarea id="edit-setup">${escapeHtml(joke.setup)}</textarea>
+          </div>
+
+          <div class="field">
+            <label>Punchline</label>
+            <textarea id="edit-punchline">${escapeHtml(joke.punchline)}</textarea>
+          </div>
+
+          <div class="field">
+            <label>Joke Type</label>
+            <select id="edit-type">
+              ${typeOptions}
+              <option value="${joke.type}" ${!types.includes(joke.type) ? 'selected' : ''}>${capitalize(joke.type)} (submitted)</option>
+            </select>
+          </div>
+
+          <div class="actions">
+            <button class="btn-approve" onclick="approveJoke()">✅ Approve &amp; Publish</button>
+            <button class="btn-reject"  onclick="rejectJoke()">❌ Reject</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Render empty state ────────────────────────────────────────────────────
+    function renderEmpty() {
+      document.getElementById('main-panel').innerHTML = `
+        <div class="empty-state">
+          <span class="emoji">🎭</span>
+          <h3>No jokes to moderate</h3>
+          <p>Submit a joke at <a href="http://localhost:3002" target="_blank" style="color:var(--accent)">localhost:3002</a> and it will appear here.</p>
+          <div class="polling-indicator">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <span>Polling queue every second…</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Approve ───────────────────────────────────────────────────────────────
+    async function approveJoke() {
+      const setup     = document.getElementById('edit-setup').value.trim();
+      const punchline = document.getElementById('edit-punchline').value.trim();
+      const type      = document.getElementById('edit-type').value;
+
+      if (!setup || !punchline || !type) {
+        showToast('⚠️ All fields are required');
+        return;
+      }
+
+      try {
+        const res = await fetch('/moderated', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ setup, punchline, type })
+        });
+
+        if (res.ok) {
+          approvedCount++;
+          document.getElementById('stat-approved').textContent = approvedCount;
+          showToast('✅ Joke approved and sent to database!');
+          setTimeout(fetchNextJoke, 500);
+        } else {
+          const data = await res.json();
+          showToast('❌ ' + (data.error || 'Failed to approve'));
+        }
+      } catch (err) {
+        showToast('❌ Network error');
+      }
+    }
+
+    // ── Reject ────────────────────────────────────────────────────────────────
+    async function rejectJoke() {
+      try {
+        await fetch('/reject', { method: 'POST' });
+        rejectedCount++;
+        document.getElementById('stat-rejected').textContent = rejectedCount;
+        showToast('🗑️ Joke rejected and removed');
+        setTimeout(fetchNextJoke, 500);
+      } catch (err) {
+        showToast('❌ Network error');
+      }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3500);
+    }
+
+    function capitalize(str) {
+      return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function formatDate(iso) {
+      if (!iso) return 'Unknown';
+      return new Date(iso).toLocaleTimeString();
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JokeCraft — Submit a Joke</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #0a0f0a;
+      --surface: #111711;
+      --card:    #182018;
+      --accent:  #4caf7d;
+      --accent2: #f5c542;
+      --text:    #e0ede2;
+      --muted:   #5a7a5f;
+      --border:  rgba(76,175,125,0.15);
+      --glow:    0 0 40px rgba(76,175,125,0.1);
+      --error:   #e05c5c;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 10% 30%, rgba(76,175,125,0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 60% at 90% 70%, rgba(245,197,66,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      animation: fadeDown 0.7s ease both;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 6vw, 3.2rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent) 0%, #a8e6c3 50%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.02em;
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-family: 'DM Mono', monospace;
+      margin-top: 0.4rem;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 1.5rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--muted);
+      animation: fadeUp 0.7s 0.1s ease both;
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.offline { background: var(--error); box-shadow: 0 0 6px var(--error); animation: none; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* ── Form card ── */
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: var(--glow);
+      animation: fadeUp 0.7s 0.2s ease both;
+    }
+
+    .field {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .char-count {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+    }
+
+    textarea, select, input[type="text"] {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.85rem 1rem;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      resize: vertical;
+    }
+
+    textarea { min-height: 90px; }
+
+    textarea:focus, select:focus, input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(76,175,125,0.12);
+    }
+
+    textarea.error, select.error, input.error {
+      border-color: var(--error);
+    }
+
+    .error-msg {
+      color: var(--error);
+      font-size: 0.78rem;
+      margin-top: 0.35rem;
+      font-family: 'DM Mono', monospace;
+      display: none;
+    }
+
+    .error-msg.visible { display: block; }
+
+    /* ── Type selector area ── */
+    .type-area {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .type-toggle {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .toggle-btn {
+      flex: 1;
+      padding: 0.6rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.05em;
+    }
+
+    .toggle-btn.active {
+      background: rgba(76,175,125,0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    #new-type-field { display: none; }
+
+    /* ── Submit button ── */
+    .btn-submit {
+      width: 100%;
+      padding: 1rem;
+      background: var(--accent);
+      color: #0a0f0a;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      margin-top: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(76,175,125,0.3);
+    }
+
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { opacity: 0.6; pointer-events: none; }
+
+    /* ── Toast notification ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 100;
+      max-width: 90vw;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: rgba(76,175,125,0.4); }
+    .toast.failure { border-color: rgba(224,92,92,0.4); }
+    .toast-icon { font-size: 1.4rem; }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2.5rem;
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-family: 'DM Mono', monospace;
+      animation: fadeUp 0.7s 0.4s ease both;
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>✍️ Submit a Joke</h1>
+      <p class="tagline">CO3404 Submit Microservice</p>
+    </header>
+
+    <div class="status-bar">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Checking joke service…</span>
+    </div>
+
+    <div class="form-card">
+
+      <!-- Setup -->
+      <div class="field">
+        <div class="label-row">
+          <label for="setup">Setup / Question</label>
+          <span class="char-count" id="setup-count">0 / 200</span>
+        </div>
+        <textarea id="setup" placeholder="e.g. Why don't scientists trust atoms?" maxlength="200"></textarea>
+        <p class="error-msg" id="setup-error">Setup is required (min 5 characters)</p>
+      </div>
+
+      <!-- Punchline -->
+      <div class="field">
+        <div class="label-row">
+          <label for="punchline">Punchline</label>
+          <span class="char-count" id="punchline-count">0 / 200</span>
+        </div>
+        <textarea id="punchline" placeholder="e.g. Because they make up everything!" maxlength="200"></textarea>
+        <p class="error-msg" id="punchline-error">Punchline is required (min 3 characters)</p>
+      </div>
+
+      <!-- Type selector -->
+      <div class="field">
+        <label>Joke Type</label>
+        <div class="type-area">
+          <div class="type-toggle">
+            <button class="toggle-btn active" id="btn-existing" onclick="switchType('existing')">Choose Existing</button>
+            <button class="toggle-btn"        id="btn-new"      onclick="switchType('new')">Add New Type</button>
+          </div>
+
+          <div id="existing-type-field">
+            <select id="type-select">
+              <option value="">Loading types…</option>
+            </select>
+          </div>
+
+          <div id="new-type-field">
+            <input type="text" id="new-type-input" placeholder="e.g. knock-knock, sport, dark…" maxlength="50" />
+          </div>
+
+          <p class="error-msg" id="type-error">Please select or enter a joke type</p>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="submit-btn" onclick="submitJoke()">
+        Submit Joke ✦
+      </button>
+    </div>
+
+    <footer>
+      <p>CO3404 Distributed Systems &mdash; Submit Microservice &mdash; <a href="/docs" target="_blank">API Docs ↗</a> &mdash; <a href="http://localhost:3001" target="_blank">Joke Service ↗</a></p>
+    </footer>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span class="toast-icon" id="toast-icon">✅</span>
+    <span id="toast-msg">Joke submitted!</span>
+  </div>
+
+  <script>
+    let useNewType = false;
+
+    // ── Check joke service status ─────────────────────────────────────────────
+    async function checkStatus() {
+      try {
+        const res  = await fetch('/types');
+        const data = await res.json();
+        const dot  = document.getElementById('status-dot');
+        const txt  = document.getElementById('status-text');
+
+        if (data.source === 'live') {
+          dot.className = 'status-dot';
+          txt.textContent = '✓ Joke service online — types loaded live';
+        } else {
+          dot.className = 'status-dot offline';
+          txt.textContent = '⚠ Joke service offline — using cached types';
+        }
+      } catch {
+        document.getElementById('status-dot').className = 'status-dot offline';
+        document.getElementById('status-text').textContent = '✗ Cannot reach joke service';
+      }
+    }
+
+    // ── Load types into dropdown ──────────────────────────────────────────────
+    async function loadTypes() {
+      try {
+        const res    = await fetch('/types');
+        const data   = await res.json();
+        const select = document.getElementById('type-select');
+        const current = select.value; // preserve current selection
+        select.innerHTML = '<option value="">— Select a type —</option>' +
+          (data.types || []).map(t =>
+            `<option value="${t}" ${t === current ? 'selected' : ''}>${t.charAt(0).toUpperCase() + t.slice(1)}</option>`
+          ).join('');
+      } catch (err) {
+        console.error('Failed to load types:', err);
+      }
+    }
+
+    // Refresh types when dropdown is focused
+    document.getElementById('type-select').addEventListener('focus', loadTypes);
+
+    // ── Toggle between existing/new type ─────────────────────────────────────
+    function switchType(mode) {
+      useNewType = mode === 'new';
+      document.getElementById('btn-existing').className   = 'toggle-btn' + (useNewType ? '' : ' active');
+      document.getElementById('btn-new').className        = 'toggle-btn' + (useNewType ? ' active' : '');
+      document.getElementById('existing-type-field').style.display = useNewType ? 'none'  : 'block';
+      document.getElementById('new-type-field').style.display      = useNewType ? 'block' : 'none';
+    }
+
+    // ── Char counters ─────────────────────────────────────────────────────────
+    document.getElementById('setup').addEventListener('input', function() {
+      document.getElementById('setup-count').textContent = `${this.value.length} / 200`;
+    });
+    document.getElementById('punchline').addEventListener('input', function() {
+      document.getElementById('punchline-count').textContent = `${this.value.length} / 200`;
+    });
+
+    // ── Validate ──────────────────────────────────────────────────────────────
+    function validate(setup, punchline, type) {
+      let valid = true;
+
+      const clearErr = (id, fieldId) => {
+        document.getElementById(id).classList.remove('visible');
+        document.getElementById(fieldId).classList.remove('error');
+      };
+      const showErr = (id, fieldId) => {
+        document.getElementById(id).classList.add('visible');
+        document.getElementById(fieldId).classList.add('error');
+        valid = false;
+      };
+
+      clearErr('setup-error', 'setup');
+      clearErr('punchline-error', 'punchline');
+      clearErr('type-error', useNewType ? 'new-type-input' : 'type-select');
+
+      if (!setup || setup.trim().length < 5)    showErr('setup-error', 'setup');
+      if (!punchline || punchline.trim().length < 3) showErr('punchline-error', 'punchline');
+      if (!type || type.trim().length < 2)      showErr('type-error', useNewType ? 'new-type-input' : 'type-select');
+
+      return valid;
+    }
+
+    // ── Submit ────────────────────────────────────────────────────────────────
+    async function submitJoke() {
+      const setup     = document.getElementById('setup').value;
+      const punchline = document.getElementById('punchline').value;
+      const type      = useNewType
+        ? document.getElementById('new-type-input').value
+        : document.getElementById('type-select').value;
+
+      if (!validate(setup, punchline, type)) return;
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled    = true;
+      btn.textContent = 'Submitting…';
+
+      try {
+        const res  = await fetch('/submit', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ setup, punchline, type })
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          showToast('✅', data.message || 'Joke submitted successfully!', 'success');
+          // Reset form
+          document.getElementById('setup').value      = '';
+          document.getElementById('punchline').value  = '';
+          document.getElementById('new-type-input').value = '';
+          document.getElementById('setup-count').textContent    = '0 / 200';
+          document.getElementById('punchline-count').textContent = '0 / 200';
+        } else if (res.status === 503) {
+          showToast('⚠️', 'Queue offline — RabbitMQ not running yet. Start it in Phase 3!', 'failure');
+        } else {
+          showToast('❌', data.error || 'Submission failed.', 'failure');
+        }
+      } catch (err) {
+        showToast('❌', 'Network error — could not reach submit service.', 'failure');
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Submit Joke ✦';
+      }
+    }
+
+    // ── Toast ─────────────────────────────────────────────────────────────────
+    function showToast(icon, msg, type) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-icon').textContent = icon;
+      document.getElementById('toast-msg').textContent  = msg;
+      toast.className = `toast ${type} show`;
+      setTimeout(() => { toast.className = `toast ${type}`; }, 4000);
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    checkStatus();
+    loadTypes();
+  </script>
+</body>
+</html>

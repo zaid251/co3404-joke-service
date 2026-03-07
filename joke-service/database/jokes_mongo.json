@@ -1,0 +1,17 @@
+[
+  { "setup": "Why don't scientists trust atoms?",               "punchline": "Because they make up everything!",               "type": "general" },
+  { "setup": "I'm reading a book about anti-gravity.",           "punchline": "It's impossible to put down!",                   "type": "general" },
+  { "setup": "Why did the scarecrow win an award?",              "punchline": "Because he was outstanding in his field!",       "type": "general" },
+  { "setup": "What do you call a fake noodle?",                  "punchline": "An impasta!",                                    "type": "general" },
+  { "setup": "Why did the bicycle fall over?",                   "punchline": "Because it was two-tired!",                      "type": "general" },
+  { "setup": "I used to hate facial hair...",                    "punchline": "But then it grew on me.",                        "type": "dad" },
+  { "setup": "Why did the dad bring a ladder to the bar?",       "punchline": "Because he heard the drinks were on the house!", "type": "dad" },
+  { "setup": "I'm on a seafood diet.",                           "punchline": "I see food and I eat it.",                       "type": "dad" },
+  { "setup": "Why do programmers prefer dark mode?",             "punchline": "Because light attracts bugs!",                   "type": "programming" },
+  { "setup": "How many programmers to change a lightbulb?",      "punchline": "None, that's a hardware problem!",               "type": "programming" },
+  { "setup": "Why did the programmer quit his job?",             "punchline": "Because he didn't get arrays!",                  "type": "programming" },
+  { "setup": "A SQL query walks into a bar...",                  "punchline": "Walks up to two tables and asks: 'Can I JOIN you?'", "type": "programming" },
+  { "setup": "Knock knock. Who's there? Lettuce.",               "punchline": "Lettuce in, it's cold out here!",                "type": "knock-knock" },
+  { "setup": "Why can't Cinderella play soccer?",                "punchline": "Because she always runs away from the ball!",    "type": "sport" },
+  { "setup": "Why do golfers carry an extra pair of pants?",     "punchline": "In case they get a hole in one!",                "type": "sport" }
+]
