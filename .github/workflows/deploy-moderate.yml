@@ -1,0 +1,112 @@
+# .github/workflows/deploy-moderate.yml
+# CI/CD Pipeline for CO3404 Distributed Systems
+# Triggers on push to main branch
+# Automatically redeploys moderate-service to Azure VM
+
+name: Deploy Moderate Service
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'moderate-service/**'
+      - '.github/workflows/deploy-moderate.yml'
+
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  # ── Job 1: Test ──────────────────────────────────────────────────────────────
+  test:
+    name: Test Moderate Service
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: ./moderate-service
+        run: npm install
+
+      - name: Check syntax (node --check)
+        working-directory: ./moderate-service
+        run: |
+          node --check src/server.js
+          node --check src/routes/moderate.js
+          node --check src/messaging/rabbitmq.js
+          echo "✅ All syntax checks passed"
+
+  # ── Job 2: Build Docker Image ─────────────────────────────────────────────
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build moderate-service Docker image
+        working-directory: ./moderate-service
+        run: |
+          docker build -t moderate-service:${{ github.sha }} .
+          docker build -t moderate-service:latest .
+          echo "✅ Docker image built successfully"
+
+      - name: Verify image
+        run: |
+          docker images moderate-service
+          echo "Image SHA: ${{ github.sha }}"
+
+  # ── Job 3: Deploy to Azure VM ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to Azure VM
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Azure VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          password: ${{ secrets.AZURE_VM_PASSWORD }}
+          script: |
+            echo "🚀 Starting deployment..."
+
+            # Navigate to project
+            cd ~/co3404-joke-service
+
+            # Pull latest code
+            git pull origin main
+
+            # Rebuild and restart only moderate-service
+            sudo docker-compose stop moderate-service
+            sudo docker-compose rm -f moderate-service
+            sudo docker-compose build moderate-service
+            sudo docker-compose up -d moderate-service
+
+            # Verify it's running
+            sleep 5
+            sudo docker-compose ps moderate-service
+
+            echo "✅ Moderate service deployed successfully!"
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.AZURE_VM_IP }}
+          username: ${{ secrets.AZURE_VM_USER }}
+          password: ${{ secrets.AZURE_VM_PASSWORD }}
+          script: |
+            curl -f http://localhost:3003/health && echo "✅ Health check passed!" || echo "❌ Health check failed"
