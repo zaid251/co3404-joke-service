@@ -174,6 +174,7 @@ services:
       KONG_ADMIN_LISTEN: "0.0.0.0:8001"
     volumes:
       - ./kong/config/kong.yml:/etc/kong/kong.yml:ro
+      - ./kong/certs:/etc/kong/certs:ro
     networks:
       - joke-network
     depends_on:
